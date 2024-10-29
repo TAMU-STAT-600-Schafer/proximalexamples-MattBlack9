@@ -115,6 +115,13 @@ fitLASSOstandardized_prox_Nesterov <- function(Xtilde, Ytilde, lambda, beta_star
 # beta0 - p vector of starting point for coordinate-descent algorithm, optional
 # eps - precision level for convergence assessment, default 0.0001
 # (NEW) tau - ADMM parameter
+# Fit LASSO on standardized data for a given lambda
+# Xtilde - centered and scaled X, n x p
+# Ytilde - centered Y, n x 1
+# lambda - tuning parameter
+# beta0 - p vector of starting point for coordinate-descent algorithm, optional
+# eps - precision level for convergence assessment, default 0.0001
+# (NEW) tau - ADMM parameter
 fitLASSOstandardized_ADMM <- function(Xtilde, Ytilde, lambda, beta_start = NULL, eps = 0.0001, tau = 0.01){
   # Compatibility and other checks
   p <- ncol(Xtilde)
@@ -133,23 +140,35 @@ fitLASSOstandardized_ADMM <- function(Xtilde, Ytilde, lambda, beta_start = NULL,
   }
   
   # ADMM implementation
+  
   error <- 1000
   theta <- beta_start
   beta <- beta_start
   eta <- rep(0, p) # beta = theta is p-dimensional
-
+  
   while(error > eps){
+    
     beta_old <- beta
-
-    beta <- solve(crossprod(Xtilde) / n + diag(p) / tau, crossprod(Xtilde, Ytilde) / n + (tehta - eta) / tau)
-
-    theta <- solft(beta - eta, lambda * tau)
-
+    
+    # update beta
+    
+    beta <- solve(crossprod(Xtilde)/n + diag(p)/tau,
+                  crossprod(Xtilde, Ytilde)/n + (theta - eta)/tau)
+    
+    
+    # update theta
+    
+    theta <- soft(beta + eta, lambda * tau)
+    
+    # update eta
+    
     eta <- eta + beta - theta
-
-    error <- abs(lasso(Xtilde, Ytilde, beta_old, lambda) - lasso(Xtilde, Ytilde, beta, lambda))
-    }
-
+    
+    # update error
+    error <- abs(lasso(Xtilde, Ytilde, beta_old, lambda) -
+                   lasso(Xtilde, Ytilde, beta, lambda))
+    
+  }
+  
   return(list(beta = beta, fmin = lasso(Xtilde, Ytilde, beta, lambda)))
 }
-
